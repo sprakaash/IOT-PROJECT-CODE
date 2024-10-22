@@ -1,0 +1,69 @@
+// Define the modem you're using BEFORE including the TinyGSM library
+#define TINY_GSM_MODEM_SIM7600
+#define TINY_GSM_RX_BUFFER 1024 // Set RX buffer to 1Kb
+
+#include <TinyGsmClient.h>
+
+// Define modem and serial objects
+#define MODEM_RST 5
+#define MODEM_PWRKEY 4
+#define MODEM_POWER_ON 23
+#define MODEM_TX 27
+#define MODEM_RX 26
+
+#define SerialMon Serial
+#define SerialAT Serial1
+
+const char apn[]  = "airtelgprs.com";  // APN for Airtel
+const char user[] = "";                // Leave blank for Airtel
+const char pass[] = "";                // Leave blank for Airtel
+
+TinyGsm modem(SerialAT);
+
+void setup() {
+  // Start serial communication with the ESP32
+  SerialMon.begin(115200);
+  delay(10);
+
+  // Set GSM module baud rate
+  SerialAT.begin(115200, SERIAL_8N1, MODEM_RX, MODEM_TX);
+  delay(3000);
+
+  // Power on the modem
+  pinMode(MODEM_PWRKEY, OUTPUT);
+  pinMode(MODEM_POWER_ON, OUTPUT);
+  digitalWrite(MODEM_PWRKEY, HIGH); // Power key high to turn on modem
+  digitalWrite(MODEM_POWER_ON, HIGH); // Ensure the modem stays powered on
+  delay(1000);
+
+  // Restart and initialize the modem
+  SerialMon.println("Initializing modem...");
+  modem.restart();
+
+  // Wait for network connection
+  SerialMon.print("Connecting to GSM network...");
+  if (!modem.waitForNetwork(60000)) {  // Timeout after 60 seconds
+    SerialMon.println("Failed to connect to GSM network");
+    return;
+  }
+  SerialMon.println("Connected!");
+
+  // Print signal quality (optional)
+  int signal = modem.getSignalQuality();
+  SerialMon.print("Signal quality: ");
+  SerialMon.println(signal);
+
+  // Connect to GPRS
+  SerialMon.print("Connecting to GPRS...");
+  if (!modem.gprsConnect(apn, user, pass)) {
+    SerialMon.println("Failed to connect to GPRS");
+    return;
+  }
+  SerialMon.println("Connected to GPRS!");
+}
+
+void loop() {
+  // Add code to execute in the loop, if needed
+}
+
+
